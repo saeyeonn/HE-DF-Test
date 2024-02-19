@@ -25,7 +25,6 @@ def matrix_multiplication(matrix1, matrix2):
     return result
 
 def linear_regression(X, y):
-    # add 1 row to input data matrix x
     X = np.column_stack([np.ones(len(X)), X])
     
     # calculate parameter
