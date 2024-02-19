@@ -24,17 +24,6 @@ def matrix_multiplication(matrix1, matrix2):
         result.append(new_row)
     return result
 
-def inverse(matrix): #2x2 행렬.. 근데 라이브러리 쓰는게 맞을듯.....
-    a = matrix[0][0]
-    b = matrix[0][1]
-    c = matrix[1][0]
-    d = matrix[1][1]
-    determinant = a * d - b * c
-    if determinant == 0:
-        raise ValueError("The matrix is singular, it does not have an inverse.")
-    factor = 1 / determinant
-    return [[d * factor, -b * factor], [-c * factor, a * factor]]
-
 def linear_regression(X, y):
     # add 1 row to input data matrix x
     X = np.column_stack([np.ones(len(X)), X])
