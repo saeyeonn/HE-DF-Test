@@ -1,5 +1,4 @@
 def dot_product(vector1, vector2):
-    # 벡터의 내적 계산
     result = 0
     for i in range(len(vector1)):
         result += vector1[i] * vector2[i]
