@@ -1,3 +1,5 @@
+import numpy as np
+
 def dot_product(vector1, vector2):
     result = 0
     for i in range(len(vector1)):
@@ -35,12 +37,12 @@ def inverse(matrix): #2x2 행렬.. 근데 라이브러리 쓰는게 맞을듯...
 
 def linear_regression(X, y):
     # add 1 row to input data matrix x
-    X = [[1] + row for row in X]
+    X = np.column_stack([np.ones(len(X)), X])
     
     # calculate parameter
     X_transpose = transpose(X)
     X_transpose_X = matrix_multiplication(X_transpose, X)
-    X_transpose_X_inverse = inverse(X_transpose_X)
+    X_transpose_X_inverse = np.linalg.inv(X_transpose_X)
     X_transpose_y = matrix_multiplication(X_transpose, [[val] for val in y])
     theta = matrix_multiplication(X_transpose_X_inverse, X_transpose_y)
     
