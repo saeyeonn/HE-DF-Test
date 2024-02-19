@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def dot_product(vector1, vector2):
     result = 0
@@ -40,4 +41,14 @@ def linear_regression(X, y):
 X = [[1], [2], [3], [4], [5]]
 y = [2, 3, 4, 5, 6]
 theta = linear_regression(X, y)
-print("Linear Regression Parameter:", theta)
+print("Simple test-Linear Regression Parameter:", theta)
+print()
+
+# real dataset test
+dataset = pd.read_csv("C:/Users/saeye/Desktop/IS Lab/Hypothesis/WholesaleCustomers.csv")
+
+X = dataset.values
+y = X[:, -1]
+X = X[:, :-1]
+theta = linear_regression(X, y)
+print("Real Dataset-Linear Regression : ", theta)
