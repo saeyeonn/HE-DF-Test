@@ -45,88 +45,44 @@ block = heaan.Block(context, encrypted = False, data = [0] * num_slot)
 ctxt = block.encrypt()
 
 
-def transpose(Ciphertext ctxt):
-    rows, cols = 2
+
+def calculate_between_matrices(n, ctxt):
+    add(n, X_transpose_X_ctxt)
+
+    for i in range(n):
+        sum_ctxt += ctxt.__lshift__(i)
+        sum_power_ctxt += (ctxt.__lshift__(i))^2
     
-    for i in range(4)
-        rot_idx = 0
+    add(sum_ctxt, X_transpose_X_ctxt)
+    add(sum_power_ctxt, X_transpose_X_ctxt)
 
-        if i % 2 == 1:
-            rot_idx = 2
+    det = res_ctxt * res_ctxt.__lshift__(3) - res_ctxt.__lshift__(1) * res_ctxt.__lshift__(2)
+    
+    add(1 / det * inversed_element.__lshift__(3), X_transpose_X_inversed_ctxt)
+    add(-1 / det * inversed_element.__lshift__(1), X_transpose_X_inversed_ctxt)
+    add(-1 / det * inversed_element.__lshift__(2), X_transpose_X_inversed_ctxt)
+    add(1 / det * inversed_element, X_transpose_X_inversed_ctxt)
+    
+    for i in range(n):
+        res_element = X_transpose_X_inversed_ctxt * ctxt.__lshift__(i)
+                    + X_transpose_X_inversed_ctxt.__lshift__(1)
+        add(res_element, res_ctxt)
 
-        if i == 2:
-            rot_idx = 3
-
-        add(ctxt.__lshift__(rot_idx), result) 
-
-    return result
-
-
-def matrix_multiplication(Ciphertext &ctxt1, Ciphertext &ctxt2):
-
-    Ciphertext ctxt3 = (ctxt1 * ctxt2).encrypt()
-    prev_rot_idx, lat_rot_idx = 0
-
-    for i in range(4):
+    for i in range(n):
+        res_element = X_transpose_X_inversed_ctxt.__lshift__(2) * ctxt.__lshift__(i)
+                    + X_transpose_X_inversed_ctxt.__lshift__(3)
+        add(res_element, res_ctxt)
         
-        for j in range(2):
-
-            if j == 1:
-                prev_rot_idx = 1    
-                lat_rot_idx = 2
-
-            else if i % 2 == 1:
-                prev_rot_idx, lat_rot_idx = 3
-            
-            else if i == 2:
-                prev_rot_idx = 2
-                lat_rot_idx = 1
-
-            prev_ctxt = ctxt1.__lshift__(prev_rot_idx)
-            lat_ctxt = ctxt2.__rshift__(lat_rot_idx)
-
-            temp += ctxt1 * ctxt2
-
-        add(temp, result)
-
-    return result
+return res_ctxt
 
 
-def matrix_inverse(Ciphertext &ctxt):
-    rot_idx = 3
-    det = ctxt.decrypt() * ctxt.__lshift__(rot_idx).decrypt() 
-        - ctxt.__lshift__(--rot_idx).decrypt * ctxt.__lshift__(--rot_idx).decrypt
 
-    if det == 0:
-        raise ValueError("Matrix is not invertible")
+def get_weight(X, y):
+    X = X.encrypt()
+    # n = count of X
 
-    inv_det = 1 / det
-
-    for i in ragne(4):
+    for i in range(n):
+        add(X.__lshift__(i), matrix_cal_res)
+    matrix_cal_res = calculate_between_matrices(X)
+    for i in range():
         
-        if i % 2 == 0:
-            rot_idx = 1
-            temp = ctxt.__lshift__(rot_idx)
-
-        else
-            rot_idx = 2
-            if i == 1:
-                ++rot_idx
-            temp = ctxt.__lshift__(rot_idx).__neg__()
-
-        add(temp * inv_det, result)
-        
-    return result
-
-
-    def linear_regression(X, y):
-
-        X = X.encrypt()
-
-        X_transpose = transpose(X)
-        X_transpose_X = matrix_multiplication(X_transpose, X)
-        X_transpose_X_inverse = matrix_inverse(X_transpose_X)
-        X_transpose_y = matrix_multiplication(X_transpose, [val for val in y])
-        theta = matrix_multiplication(X_transpose_X_inverse, X_transpose_y)
-
-        return theta
