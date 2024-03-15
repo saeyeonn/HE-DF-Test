@@ -1,3 +1,12 @@
+'''
+import numpy as np
+
+X = np.array([[1, 2], [1,3]])
+
+result = np.linalg.inv(X.T@X)@X.T
+'''
+
+
 import os
 os.environ["OMP_NUM_THREADS"] = "8"  # set the number of CPU threads to use for parallel regions
 
@@ -33,11 +42,9 @@ log_num_slot
 
 
 def data_x_encryption(data_x, row):
-    x_col_1st = []
     x_col_2nd = []
 
     for i in range(row):
-        x_col_1st.append(data_x[i][0])
         x_col_2nd.append(data_x[i][1])
 
     data = heaan.Block(context, encrypted = False, data = x_col_2nd)
@@ -49,23 +56,9 @@ def data_x_encryption(data_x, row):
 
 def matrix_X_calculation(data_ctxt, row):
 
-    data_sqr_sum_ctxt = data_ctxt * data_ctxt 
-    data_sum_ctxt = left_rotate_reduce(context, data_ctxt, row, 1)
-
-    # x의 합으로만 이루어진 암호문 & x^2 합으로만 이루어진 암호문 생성
-    temp = []
-    for i in range(row):
-        for j in range(row):
-            temp[i] = 0
-
-        temp[i] = 1
-        temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
-        temp_ctxt = temp_ctxt.encrypt()
-
-        for i in range(row):
-            x_sum_slot += temp_ctxt * data_sum_ctxt
-            x_sqr_sum_slot += temp_ctxt * data_sqr_sum_ctxt
-
+    x_sqr_ctxt = data_ctxt * data_ctxt 
+    x_sum_slot = left_rotate_reduce(context, data_ctxt, row, 1) # x_sum_slot
+    x_sqr_sum_slot = left_rotate_reduce(context, x_sqr_ctxt, row, 1)
 
     # determinant = ad-bc
     temp = [row, row, row, row]
@@ -95,7 +88,9 @@ def matrix_X_calculation(data_ctxt, row):
     temp = [1, 1, 1, 1]
     temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
     temp_ctxt = temp.encrypt()
-    reverse_ctxt = temp / n_slot / determinant * reverse_ctxt
+    inverse_determinant = determinant.inverse()
+    inverse_determinant.bootstrap()
+    reverse_ctxt = inverse_determinant * reverse_ctxt
 
 
     # (X^T * X )! ^ (-1) * X^T = [m1 + m2 * x1, m1 + m2 * x2, ..., m1 + m2 * xn, m3 + m4 * x1, m3 + m4 * x2, ..., m3 + m4 * xn]
@@ -135,15 +130,16 @@ def normal_equation(matrix_result, y):
 
 
 
-def dickey_fuller_with_constant(a, data_x, time):
+def dickey_fuller_with_constant(a, data_x_previous, data_x):
 
     # data_x should be array -> [[1, 1], [1, 2], [1, 3]]
-    row = len(data_x)
+    row = len(data_x_previous)
     n = heaan.Block(context,encrypted = False, data = row)
     n_ctxt = n.encrypt()
 
-    data_ctxt = data_x_encryption(data_x, row)
-    small_delta_plus_one = matrix_X_calculation(data_ctxt, n_ctxt, row)
+    data_x_ctxt = data_x_encryption(data_x, row)
+    data_x_previous_ctxt = data_x_encryption(data_x_previous)
+    matrix_X_calculation_value = matrix_X_calculation(data_x_previous_ctxt, n_ctxt, row, data_x_ctxt)
 
     # Delta X_t = a0 + delta * X_(t - 1) + W_t
 
@@ -153,11 +149,6 @@ def dickey_fuller_with_constant(a, data_x, time):
     i = heaan.Block(context, enrcrypt = False, data = 1)
     i_ctxt = i.encrypt()
 
-    white_noise = np.random.normal(loc=0, scale=1, size=1000)
-    white_noise = heaan.Block(context, encrypted = False, data = white_noise)
-    white_noise_ctxt = white_noise.encrypt()
-
-    big_delta_X = a_ctxt + (small_delta_plus_one - i_ctxt) * data_ctxt.__lshift__(time - 2) + white_noise_ctxt
+    big_delta_X = a_ctxt + (matrix_X_calculation - i_ctxt) * data_x_ctxt.__lshift__(time - 2)
     
-    return big_delta_X
-
+    return big_delta_X.decrypt()
