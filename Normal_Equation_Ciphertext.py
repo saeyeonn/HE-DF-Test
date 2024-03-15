@@ -1,14 +1,9 @@
 '''
-import numpy as np
-
-X = np.array([[1, 2], [1,3]])
-
-result = np.linalg.inv(X.T@X)@X.T
 '''
 
 
 import os
-os.environ["OMP_NUM_THREADS"] = "8"  # set the number of CPU threads to use for parallel regions
+os.environ["OMP_NUM_THREADS"] = "32"  # set the number of CPU threads to use for parallel regions
 
 from pathlib import Path
 import numpy as np
@@ -18,7 +13,7 @@ import heaan_sdk as heaan
 import math
 
 # set key_dir_path
-key_dir_path = Path('./DF_test/keys')
+key_dir_path = Path('./keys')
 
 # set parameter
 params = heaan.HEParameter.from_preset("FGb")
@@ -34,65 +29,71 @@ context = heaan.Context(
     generate_keys=False,
 )
 
+
 num_slot = context.num_slots
-print(num_slot)
+print("num_slot : ", num_slot)
 
 log_num_slot = context.log_slots
 log_num_slot
 
 
-def data_x_encryption(data_x, row):
-    x_col_2nd = []
 
-    for i in range(row):
-        x_col_2nd.append(data_x[i][1])
-
-    data = heaan.Block(context, encrypted = False, data = x_col_2nd)
-    data_ctxt = data.encrypt() 
-
-    return data_ctxt
+def rotate_sum(input_ctxt):
+#    input_ctxt=input.copy()
+    for i in range(int(np.log2(num_slot))):
+        tmp_ctxt = input_ctxt.__lshift__(2 ** i)
+        input_ctxt = input_ctxt + tmp_ctxt
+    return input_ctxt
 
 
 
-def matrix_X_calculation(data_ctxt, row):
+def matrix_X_calculation(data_X, n, y):
+    data_ctxt = heaan.Block(context, encrypted = False, data = data_X)
+    data_ctxt.encrypt() 
 
-    x_sqr_ctxt = data_ctxt * data_ctxt 
-    x_sum_slot = left_rotate_reduce(context, data_ctxt, row, 1) # x_sum_slot
-    x_sqr_sum_slot = left_rotate_reduce(context, x_sqr_ctxt, row, 1)
+    x_sqr_ctxt = data_ctxt * data_ctxt
+    
+    x_sum_slot = rotate_sum(data_ctxt) # sigma x
+    x_sqr_sum_slot = rotate_sum(x_sqr_ctxt) # sigma (x^2)
+    
+    n_slot = heaan.Block(context, encrypted=False, data = [n for i in range(num_slot)])
+    n_slot.encrypt()
 
-    # determinant = ad-bc
-    temp = [row, row, row, row]
-    n_slot = heaan.Block(context, encrypted=False, data = temp)
-    n_slot = n_slot.encrypt()
-    determinant = n_slot * x_sqr_sum_slot - x_sum_slot * x_sum_slot
+    det_slot = n_slot * x_sqr_sum_slot
+    det_slot = det_slot - x_sum_slot * x_sum_slot
+    
+    det_inverse = det_slot.inverse()
 
-    # 역행렬 1번째 원소 시그마 (x^2)
-    temp = [1, 0, 0, 0]
-    temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
-    temp_ctxt = temp.encrypt()
-    reverse_ctxt = temp_ctxt * x_sqr_sum_slot
+    det_inverse.bootstrap()
+ 
+    result_row1 = data_ctxt * x_sum_slot
 
-    # 역행렬 2,3번째 원소 시그마 (x) * (-1)
-    temp = [0, -1, -1, 0]
-    temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
-    temp_ctxt = temp.encrypt()
-    reverse_ctxt += temp_ctxt * x_sum_slot
-
-    # 역행렬 4번째 원소 n
-    temp = [0, 0, 0, n]
-    temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
-    temp_ctxt = temp.encrypt()
-    reverse_ctxt += temp_ctxt
-
-    # (1 / determinant) * matrix
-    temp = [1, 1, 1, 1]
-    temp_ctxt = heaan.Block(context, encrypted=False, data = temp)
-    temp_ctxt = temp.encrypt()
-    inverse_determinant = determinant.inverse()
-    inverse_determinant.bootstrap()
-    reverse_ctxt = inverse_determinant * reverse_ctxt
+    result_row1 = result_row1 * (-1) # checked
+    result_row1 = result_row1 + x_sqr_sum_slot
 
 
+    result_row1 = det_inverse * result_row1
+
+    result_row2 = x_sum_slot * (-1)
+    result_row2 = result_row2 + n_slot * data_ctxt 
+    result_row2 = det_inverse * result_row2
+
+    row1=result_row1.copy()
+    row2=result_row2.copy()
+    row1.decrypt()
+    row2.decrypt()
+
+    for i in range(4):
+         print("row1\n", row1[i])
+         print("row2\n", row2[i])
+
+
+data_x = [4,9]
+y = [3, 4]
+data_x_ctxt = matrix_X_calculation(data_x, 2, y)
+
+
+'''
     # (X^T * X )! ^ (-1) * X^T = [m1 + m2 * x1, m1 + m2 * x2, ..., m1 + m2 * xn, m3 + m4 * x1, m3 + m4 * x2, ..., m3 + m4 * xn]
     temp = [row]
  
@@ -152,3 +153,4 @@ def dickey_fuller_with_constant(a, data_x_previous, data_x):
     big_delta_X = a_ctxt + (matrix_X_calculation - i_ctxt) * data_x_ctxt.__lshift__(time - 2)
     
     return big_delta_X.decrypt()
+'''
