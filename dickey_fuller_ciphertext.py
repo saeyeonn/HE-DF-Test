@@ -83,9 +83,11 @@ def normal_equation(data_x_ctxt, n, data_y_ctxt):
 # lagged 시계열 데이터 (t-1 시점) : X_lagged = x_arr[:-1]
 # 회귀 모델에 상수항과 lagged 시계열을 포함
 
-def dickey_fuller_test(x_arr, n, y_arr):
+def dickey_fuller_test(previous_x_arr, x_arr, n, y_arr):
     
-    data_x_ctxt = heaan.Block(context, encrypted = False, data = x_arr)
+    data_previous_x_ctxt = heaan.Block(context, encrypted = False, data = previous_x_arr) # 0 ~ n
+    data_previous_x_ctxt.encrypt() 
+    data_x_ctxt = heaan.Block(context, encrypted = False, data = x_arr) # 1 ~ n-1
     data_x_ctxt.encrypt() 
     data_y_ctxt = heaan.Block(context, encrypted = False, data = y_arr)
     data_y_ctxt.encrypt() 
@@ -94,22 +96,16 @@ def dickey_fuller_test(x_arr, n, y_arr):
 
     # 회귀 계수
     # 정규방정식에 들어가는 X값[:-1] :첫번째 시점부터 n-1 시점까지 , Y 값 = X[1:]-X[:-1] t 시점에서 t-1 시점을  뺀값 
-    zero = [0]
-    zero_ctxt = heaan.Block(context, encrypted = False, data = zero)
+    # zero = [0]
+    # zero_ctxt = heaan.Block(context, encrypted = False, data = zero)
 
     a0, delta, n_ctxt, x_sqr_sum_ctxt = beta
-    a0_ctxt = zero_ctxt + a0
-    a0_ctxt = rotate_sum(a0_ctxt)
 
-    g_ctxt = zero_ctxt + delta 
-    g_ctxt = rotate_sum(g_ctxt)
-    g_ctxt = 1- g_ctxt
-
-    g_ctxt = g_ctxt * data_x_ctxt
+    g_ctxt = 1 - delta 
+    residuals = g_ctxt * data_previous_x_ctxt 
 
     # 계수의 표준 오차 계산
-    delta_X_hat = g_ctxt + a0_ctxt  # 회귀 예측값 -> 수식으로 풀어서 계산해서 이부분이 필요없을 것 같긴함
-    residuals = g_ctxt + a0_ctxt # 잔차=에러 값들 
+    residuals = residuals - a0 # 잔차=에러 값들 
 
     residuals_sqr = residuals * residuals
     residuals_avg = rotate_sum(residuals) / n
