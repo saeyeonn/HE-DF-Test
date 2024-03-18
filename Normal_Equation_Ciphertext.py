@@ -1,3 +1,7 @@
+'''
+'''
+
+
 import os
 os.environ["OMP_NUM_THREADS"] = "32"  # set the number of CPU threads to use for parallel regions
 
@@ -24,6 +28,7 @@ context = heaan.Context(
     load_keys="all",
     generate_keys=False,
 )
+
 
 num_slot = context.num_slots
 log_num_slot = context.log_slots
@@ -57,7 +62,7 @@ def matrix_X_calculation(data_x, n, data_y):
     det_inverse.bootstrap()
  
     result_row1 = data_x_ctxt * x_sum_slot
-    result_row1 = result_row1 * (-1) # checked
+    result_row1 = result_row1 * (-1) 
     result_row1 = result_row1 + x_sqr_sum_slot
     result_row1 = det_inverse * result_row1
 
@@ -76,6 +81,9 @@ def matrix_X_calculation(data_x, n, data_y):
         print("v2 : ", v2_cp[i])
 
 
+    # checked
+        
+        
     data_y_ctxt = heaan.Block(context, encrypted = False, data = data_y)
     data_y_ctxt.encrypt() 
 
